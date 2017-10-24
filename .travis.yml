@@ -1,0 +1,46 @@
+dist: trusty
+sudo: required
+services:
+    - docker
+addons:
+  apt:
+    sources:
+      - sourceline: 'ppa:masterminds/glide'
+    packages:
+      - glide
+cache:
+    directories:
+        - node_modules
+        - $HOME/gopath/pkg
+        - /var/lib/docker
+
+language: go
+
+os:
+    - linux
+
+go:
+    - 1.7.x
+    - 1.8.x
+    - 1.9.x
+    - master
+env:
+    matrix:
+        - MODE=standard
+
+matrix:
+    allow_failures:
+        - go: master
+    include:
+        - go: 1.9.x
+          env: MODE=gopherjs
+        - go: 1.9.x
+          env: MODE=linter
+        - go: 1.9.x
+          env: MODE=coverage
+
+install:
+    - ./travis/install.sh $MODE
+
+script:
+    - ./travis/test.sh $MODE
