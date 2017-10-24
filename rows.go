@@ -1,4 +1,4 @@
-package proxy
+package proxydb
 
 import (
 	"encoding/json"
