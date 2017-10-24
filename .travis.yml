@@ -18,7 +18,6 @@ language: go
 
 os:
     - linux
-    - osx
 
 go:
     - 1.7.x
@@ -26,10 +25,6 @@ go:
     - 1.9.x
     - master
 env:
-    global:
-        - KIVIK_TEST_DSN_COUCH16="http://admin:abc123@localhost:6000/"
-        - KIVIK_TEST_DSN_COUCH20="http://admin:abc123@localhost:6001/"
-        - HOMEBREW_NO_AUTO_UPDATE=1
     matrix:
         - MODE=standard
 

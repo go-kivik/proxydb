@@ -2,10 +2,6 @@
 set -euC
 set -o xtrace
 
-if [ "$TRAVIS_OS_NAME" == "osx" ]; then
-    brew install glide
-fi
-
 glide install
 
 function generate {
@@ -19,8 +15,7 @@ case "$1" in
         generate
     ;;
     "linter")
-        go get -u gopkg.in/alecthomas/gometalinter.v1
-        gometalinter.v1 --install
+        go get -u gopkg.in/alecthomas/gometalinter.v1 && gometalinter.v1 --install
     ;;
     "coverage")
         generate
