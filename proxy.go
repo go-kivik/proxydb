@@ -69,6 +69,7 @@ type db struct {
 }
 
 var _ driver.DB = &db{}
+var _ driver.DBOpts = &db{}
 
 func (d *db) AllDocs(ctx context.Context, opts map[string]interface{}) (driver.Rows, error) {
 	kivikRows, err := d.DB.AllDocs(ctx, opts)
@@ -132,11 +133,51 @@ func (d *db) BulkDocs(_ context.Context, _ []interface{}) (driver.BulkResults, e
 }
 
 func (d *db) PutAttachment(_ context.Context, _, _, _, _ string, _ io.Reader) (string, error) {
+	panic("PutAttachment should never be called")
+}
+
+func (d *db) PutAttachmentOpts(_ context.Context, _, _, _, _ string, _ io.Reader, opts map[string]interface{}) (string, error) {
 	// FIXME: Unimplemented
 	return "", notYetImplemented
 }
 
 func (d *db) GetAttachment(ctx context.Context, docID, rev, filename string) (contentType string, md5sum driver.MD5sum, body io.ReadCloser, err error) {
+	panic("GetAttachment should never be called")
+}
+
+func (d *db) GetAttachmentOpts(ctx context.Context, docID, rev, filename string, opts map[string]interface{}) (contentType string, md5sum driver.MD5sum, body io.ReadCloser, err error) {
 	// FIXME: Unimplemented
 	return "", [16]byte{}, nil, notYetImplemented
+}
+
+func (d *db) CreateDoc(_ context.Context, _ interface{}) (string, string, error) {
+	panic("CreateDoc should never be called")
+}
+
+func (d *db) CreateDocOpts(ctx context.Context, doc interface{}, opts map[string]interface{}) (string, string, error) {
+	return d.DB.CreateDoc(ctx, doc, opts)
+}
+
+func (d *db) Delete(_ context.Context, _, _ string) (string, error) {
+	panic("Delete should never be called")
+}
+
+func (d *db) DeleteOpts(ctx context.Context, id, rev string, opts map[string]interface{}) (string, error) {
+	return d.DB.Delete(ctx, id, rev, opts)
+}
+
+func (d *db) DeleteAttachment(_ context.Context, _, _, _ string) (string, error) {
+	panic("DeleteAttachment should never be called")
+}
+
+func (d *db) DeleteAttachmentOpts(ctx context.Context, id, rev, filename string, opts map[string]interface{}) (string, error) {
+	return d.DB.DeleteAttachment(ctx, id, rev, filename, opts)
+}
+
+func (d *db) Put(_ context.Context, _ string, _ interface{}) (string, error) {
+	panic("Put should never be called")
+}
+
+func (d *db) PutOpts(ctx context.Context, id string, doc interface{}, opts map[string]interface{}) (string, error) {
+	return d.DB.Put(ctx, id, doc, opts)
 }
