@@ -17,7 +17,7 @@ case "$1" in
     "coverage")
         echo "" > coverage.txt
 
-        TEST_PKGS=$(find -name "*_test.go" | grep -v /vendor/ | xargs dirname | sort -u | sed -e "s#^\.#github.com/go-kivik/proxydb#" )
+        TEST_PKGS=$(go list ./...)
 
         for d in $TEST_PKGS; do
             go test -i $d
