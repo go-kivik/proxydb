@@ -2,12 +2,11 @@ package proxydb
 
 import (
 	"context"
-	"encoding/json"
 	"io"
 
-	"github.com/flimzy/kivik"
-	"github.com/flimzy/kivik/driver"
-	"github.com/flimzy/kivik/errors"
+	"github.com/go-kivik/kivik"
+	"github.com/go-kivik/kivik/driver"
+	"github.com/go-kivik/kivik/errors"
 )
 
 var notYetImplemented = errors.Status(kivik.StatusNotImplemented, "kivik: not yet implemented in proxy driver")
@@ -87,14 +86,9 @@ func (d *db) Query(ctx context.Context, ddoc, view string, opts map[string]inter
 	return &rows{kivikRows}, nil
 }
 
-func (d *db) Get(ctx context.Context, id string, opts map[string]interface{}) (json.RawMessage, error) {
-	row, err := d.DB.Get(ctx, id, opts)
-	if err != nil {
-		return nil, err
-	}
-	var raw json.RawMessage
-	err = row.ScanDoc(&raw)
-	return raw, err
+func (d *db) Get(ctx context.Context, id string, opts map[string]interface{}) (int64, io.ReadCloser, error) {
+	row := d.DB.Get(ctx, id, opts)
+	return row.Length(), row, nil
 }
 
 func (d *db) Stats(ctx context.Context) (*driver.DBStats, error) {
