@@ -1,6 +1,6 @@
 package: github.com/go-kivik/proxydb
 import:
-- package: github.com/flimzy/kivik
+- package: github.com/go-kivik/kivik
   version: master
   subpackages:
   - driver
