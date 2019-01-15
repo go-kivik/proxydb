@@ -85,19 +85,54 @@ func (d *db) Query(ctx context.Context, ddoc, view string, opts map[string]inter
 	return &rows{kivikRows}, nil
 }
 
+type atts struct {
+	*kivik.AttachmentsIterator
+}
+
+var _ driver.Attachments = &atts{}
+
+func (a *atts) Close() error { return nil }
+func (a *atts) Next(att *driver.Attachment) error {
+	next, err := a.AttachmentsIterator.Next()
+	if err != nil {
+		return err
+	}
+	*att = driver.Attachment(*next)
+	return nil
+}
+
 func (d *db) Get(ctx context.Context, id string, opts map[string]interface{}) (*driver.Document, error) {
 	row := d.DB.Get(ctx, id, opts)
 	return &driver.Document{
 		ContentLength: row.ContentLength,
 		Rev:           row.Rev,
 		Body:          row.Body,
-	}, row.Err
+		Attachments:   &atts{row.Attachments},
+	}, nil
 }
 
 func (d *db) Stats(ctx context.Context) (*driver.DBStats, error) {
 	i, err := d.DB.Stats(ctx)
-	stats := driver.DBStats(*i)
-	return &stats, err
+	if err != nil {
+		return nil, err
+	}
+	var cluster *driver.ClusterStats
+	if i.Cluster != nil {
+		c := driver.ClusterStats(*i.Cluster)
+		cluster = &c
+	}
+	return &driver.DBStats{
+		Name:           i.Name,
+		CompactRunning: i.CompactRunning,
+		DocCount:       i.DocCount,
+		DeletedCount:   i.DeletedCount,
+		UpdateSeq:      i.UpdateSeq,
+		DiskSize:       i.DiskSize,
+		ActiveSize:     i.ActiveSize,
+		ExternalSize:   i.ExternalSize,
+		Cluster:        cluster,
+		RawResponse:    i.RawResponse,
+	}, nil
 }
 
 func (d *db) Security(ctx context.Context) (*driver.Security, error) {
@@ -129,28 +164,31 @@ func (d *db) BulkDocs(_ context.Context, _ []interface{}) (driver.BulkResults, e
 	return nil, notYetImplemented
 }
 
-func (d *db) PutAttachment(_ context.Context, _, _ string, _ *driver.Attachment, opts map[string]interface{}) (string, error) {
-	// FIXME: Unimplemented
-	return "", notYetImplemented
+func (d *db) PutAttachment(_ context.Context, _, _ string, _ *driver.Attachment, _ map[string]interface{}) (string, error) {
+	panic("PutAttachment should never be called")
 }
 
-func (d *db) GetAttachment(ctx context.Context, docID, rev, filename string, opts map[string]interface{}) (*driver.Attachment, error) {
+func (d *db) GetAttachment(ctx context.Context, docID, rev, filename string, _ map[string]interface{}) (*driver.Attachment, error) {
+	panic("GetAttachment should never be called")
+}
+
+func (d *db) GetAttachmentMeta(ctx context.Context, docID, rev, filename string, opts map[string]interface{}) (*driver.Attachment, error) {
 	// FIXME: Unimplemented
 	return nil, notYetImplemented
 }
 
-func (d *db) CreateDoc(ctx context.Context, doc interface{}, opts map[string]interface{}) (string, string, error) {
-	return d.DB.CreateDoc(ctx, doc, opts)
+func (d *db) CreateDoc(_ context.Context, _ interface{}, _ map[string]interface{}) (string, string, error) {
+	panic("CreateDoc should never be called")
 }
 
-func (d *db) Delete(ctx context.Context, id, rev string, opts map[string]interface{}) (string, error) {
-	return d.DB.Delete(ctx, id, rev, opts)
+func (d *db) Delete(_ context.Context, _, _ string, _ map[string]interface{}) (string, error) {
+	panic("Delete should never be called")
 }
 
-func (d *db) DeleteAttachment(ctx context.Context, id, rev, filename string, opts map[string]interface{}) (string, error) {
-	return d.DB.DeleteAttachment(ctx, id, rev, filename, opts)
+func (d *db) DeleteAttachment(_ context.Context, _, _, _ string, _ map[string]interface{}) (string, error) {
+	panic("DeleteAttachment should never be called")
 }
 
-func (d *db) Put(ctx context.Context, id string, doc interface{}, opts map[string]interface{}) (string, error) {
-	return d.DB.Put(ctx, id, doc, opts)
+func (d *db) Put(_ context.Context, _ string, _ interface{}, _ map[string]interface{}) (string, error) {
+	panic("Put should never be called")
 }
