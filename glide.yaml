@@ -1,7 +1,0 @@
-package: github.com/go-kivik/proxydb
-import:
-- package: github.com/go-kivik/kivik
-  version: master
-  subpackages:
-  - driver
-  - errors
