@@ -3,8 +3,8 @@ package proxydb
 import (
 	"encoding/json"
 
-	"github.com/go-kivik/kivik"
-	"github.com/go-kivik/kivik/driver"
+	"github.com/go-kivik/kivik/v3"
+	"github.com/go-kivik/kivik/v3/driver"
 )
 
 type rows struct {

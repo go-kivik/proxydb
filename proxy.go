@@ -4,9 +4,9 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/go-kivik/kivik"
-	"github.com/go-kivik/kivik/driver"
-	"github.com/go-kivik/kivik/errors"
+	"github.com/go-kivik/kivik/v3"
+	"github.com/go-kivik/kivik/v3/driver"
+	"github.com/go-kivik/kivik/v3/errors"
 )
 
 var notYetImplemented = errors.Status(http.StatusNotImplemented, "kivik: not yet implemented in proxy driver")
