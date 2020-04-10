@@ -2,13 +2,14 @@ package proxydb
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/go-kivik/kivik"
 	"github.com/go-kivik/kivik/driver"
 	"github.com/go-kivik/kivik/errors"
 )
 
-var notYetImplemented = errors.Status(kivik.StatusNotImplemented, "kivik: not yet implemented in proxy driver")
+var notYetImplemented = errors.Status(http.StatusNotImplemented, "kivik: not yet implemented in proxy driver")
 
 // CompleteClient is a composite of all compulsory and optional driver.* client
 // interfaces.
@@ -34,8 +35,7 @@ func (c *client) AllDBs(ctx context.Context, options map[string]interface{}) ([]
 }
 
 func (c *client) CreateDB(ctx context.Context, dbname string, options map[string]interface{}) error {
-	_, err := c.Client.CreateDB(ctx, dbname, options)
-	return err
+	return c.Client.CreateDB(ctx, dbname, options)
 }
 
 func (c *client) DBExists(ctx context.Context, dbname string, options map[string]interface{}) (bool, error) {
@@ -59,8 +59,8 @@ func (c *client) Version(ctx context.Context) (*driver.Version, error) {
 }
 
 func (c *client) DB(ctx context.Context, name string, options map[string]interface{}) (driver.DB, error) {
-	d, err := c.Client.DB(ctx, name, options)
-	return &db{d}, err
+	d := c.Client.DB(ctx, name, options)
+	return &db{d}, nil
 }
 
 type db struct {
@@ -168,7 +168,7 @@ func (d *db) PutAttachment(_ context.Context, _, _ string, _ *driver.Attachment,
 	panic("PutAttachment should never be called")
 }
 
-func (d *db) GetAttachment(ctx context.Context, docID, rev, filename string, _ map[string]interface{}) (*driver.Attachment, error) {
+func (d *db) GetAttachment(ctx context.Context, docID, filename string, _ map[string]interface{}) (*driver.Attachment, error) {
 	panic("GetAttachment should never be called")
 }
 
