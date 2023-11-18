@@ -2,14 +2,22 @@ package proxydb
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/go-kivik/kivik/v4"
 	"github.com/go-kivik/kivik/v4/driver"
-	"github.com/go-kivik/kivik/v4/errors"
 )
 
-var notYetImplemented = errors.Status(http.StatusNotImplemented, "kivik: not yet implemented in proxy driver")
+type statusError struct {
+	error
+	status int
+}
+
+func (e statusError) Unwrap() error   { return e.error }
+func (e statusError) HTTPStatus() int { return e.status }
+
+var notYetImplemented = statusError{status: http.StatusNotImplemented, error: errors.New("kivik: not yet implemented in proxy driver")}
 
 // CompleteClient is a composite of all compulsory and optional driver.* client
 // interfaces.
