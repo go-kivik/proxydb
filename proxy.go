@@ -1,8 +1,11 @@
 package proxydb
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 
 	"github.com/go-kivik/kivik/v4"
@@ -23,7 +26,6 @@ var notYetImplemented = statusError{status: http.StatusNotImplemented, error: er
 // interfaces.
 type CompleteClient interface {
 	driver.Client
-	driver.Authenticator
 }
 
 // NewClient wraps an existing *kivik.Client connection, allowing it to be used
@@ -38,19 +40,19 @@ type client struct {
 
 var _ CompleteClient = &client{}
 
-func (c *client) AllDBs(ctx context.Context, options map[string]interface{}) ([]string, error) {
+func (c *client) AllDBs(ctx context.Context, options driver.Options) ([]string, error) {
 	return c.Client.AllDBs(ctx, options)
 }
 
-func (c *client) CreateDB(ctx context.Context, dbname string, options map[string]interface{}) error {
+func (c *client) CreateDB(ctx context.Context, dbname string, options driver.Options) error {
 	return c.Client.CreateDB(ctx, dbname, options)
 }
 
-func (c *client) DBExists(ctx context.Context, dbname string, options map[string]interface{}) (bool, error) {
+func (c *client) DBExists(ctx context.Context, dbname string, options driver.Options) (bool, error) {
 	return c.Client.DBExists(ctx, dbname, options)
 }
 
-func (c *client) DestroyDB(ctx context.Context, dbname string, options map[string]interface{}) error {
+func (c *client) DestroyDB(ctx context.Context, dbname string, options driver.Options) error {
 	return c.Client.DestroyDB(ctx, dbname, options)
 }
 
@@ -66,8 +68,8 @@ func (c *client) Version(ctx context.Context) (*driver.Version, error) {
 	}, nil
 }
 
-func (c *client) DB(ctx context.Context, name string, options map[string]interface{}) (driver.DB, error) {
-	d := c.Client.DB(ctx, name, options)
+func (c *client) DB(name string, options driver.Options) (driver.DB, error) {
+	d := c.Client.DB(name, options)
 	return &db{d}, nil
 }
 
@@ -77,20 +79,14 @@ type db struct {
 
 var _ driver.DB = &db{}
 
-func (d *db) AllDocs(ctx context.Context, opts map[string]interface{}) (driver.Rows, error) {
-	kivikRows, err := d.DB.AllDocs(ctx, opts)
-	if err != nil {
-		return nil, err
-	}
-	return &rows{kivikRows}, nil
+func (d *db) AllDocs(ctx context.Context, opts driver.Options) (driver.Rows, error) {
+	kivikRows := d.DB.AllDocs(ctx, opts)
+	return &rows{kivikRows}, kivikRows.Err()
 }
 
-func (d *db) Query(ctx context.Context, ddoc, view string, opts map[string]interface{}) (driver.Rows, error) {
-	kivikRows, err := d.DB.Query(ctx, ddoc, view, opts)
-	if err != nil {
-		return nil, err
-	}
-	return &rows{kivikRows}, nil
+func (d *db) Query(ctx context.Context, ddoc, view string, opts driver.Options) (driver.Rows, error) {
+	kivikRows := d.DB.Query(ctx, ddoc, view, opts)
+	return &rows{kivikRows}, kivikRows.Err()
 }
 
 type atts struct {
@@ -109,13 +105,30 @@ func (a *atts) Next(att *driver.Attachment) error {
 	return nil
 }
 
-func (d *db) Get(ctx context.Context, id string, opts map[string]interface{}) (*driver.Document, error) {
+func (d *db) Get(ctx context.Context, id string, opts driver.Options) (*driver.Document, error) {
 	row := d.DB.Get(ctx, id, opts)
+	rev, err := row.Rev()
+	if err != nil {
+		return nil, err
+	}
+	var doc json.RawMessage
+	if err := row.ScanDoc(&doc); err != nil {
+		return nil, err
+	}
+	attIter, err := row.Attachments()
+	if err != nil && kivik.HTTPStatus(err) != http.StatusNotFound {
+		return nil, err
+	}
+
+	var attachments *atts
+	if attIter != nil {
+		attachments = &atts{attIter}
+	}
+
 	return &driver.Document{
-		ContentLength: row.ContentLength,
-		Rev:           row.Rev,
-		Body:          row.Body,
-		Attachments:   &atts{row.Attachments},
+		Rev:         rev,
+		Body:        io.NopCloser(bytes.NewReader(doc)),
+		Attachments: attachments,
 	}, nil
 }
 
@@ -163,40 +176,40 @@ func (d *db) SetSecurity(ctx context.Context, security *driver.Security) error {
 	return d.DB.SetSecurity(ctx, sec)
 }
 
-func (d *db) Changes(ctx context.Context, opts map[string]interface{}) (driver.Changes, error) {
+func (d *db) Changes(ctx context.Context, opts driver.Options) (driver.Changes, error) {
 	return nil, notYetImplemented
 }
 
-func (d *db) BulkDocs(_ context.Context, _ []interface{}) (driver.BulkResults, error) {
+func (d *db) BulkDocs(_ context.Context, _ []interface{}) ([]driver.BulkResult, error) {
 	// FIXME: Unimplemented
 	return nil, notYetImplemented
 }
 
-func (d *db) PutAttachment(_ context.Context, _, _ string, _ *driver.Attachment, _ map[string]interface{}) (string, error) {
+func (d *db) PutAttachment(_ context.Context, _ string, _ *driver.Attachment, _ driver.Options) (string, error) {
 	panic("PutAttachment should never be called")
 }
 
-func (d *db) GetAttachment(ctx context.Context, docID, filename string, _ map[string]interface{}) (*driver.Attachment, error) {
+func (d *db) GetAttachment(ctx context.Context, docID, filename string, _ driver.Options) (*driver.Attachment, error) {
 	panic("GetAttachment should never be called")
 }
 
-func (d *db) GetAttachmentMeta(ctx context.Context, docID, rev, filename string, opts map[string]interface{}) (*driver.Attachment, error) {
+func (d *db) GetAttachmentMeta(ctx context.Context, docID, rev, filename string, opts driver.Options) (*driver.Attachment, error) {
 	// FIXME: Unimplemented
 	return nil, notYetImplemented
 }
 
-func (d *db) CreateDoc(_ context.Context, _ interface{}, _ map[string]interface{}) (string, string, error) {
+func (d *db) CreateDoc(_ context.Context, _ interface{}, _ driver.Options) (string, string, error) {
 	panic("CreateDoc should never be called")
 }
 
-func (d *db) Delete(_ context.Context, _, _ string, _ map[string]interface{}) (string, error) {
+func (d *db) Delete(_ context.Context, _ string, _ driver.Options) (string, error) {
 	panic("Delete should never be called")
 }
 
-func (d *db) DeleteAttachment(_ context.Context, _, _, _ string, _ map[string]interface{}) (string, error) {
+func (d *db) DeleteAttachment(_ context.Context, _, _ string, _ driver.Options) (string, error) {
 	panic("DeleteAttachment should never be called")
 }
 
-func (d *db) Put(_ context.Context, _ string, _ interface{}, _ map[string]interface{}) (string, error) {
+func (d *db) Put(_ context.Context, _ string, _ interface{}, _ driver.Options) (string, error) {
 	panic("Put should never be called")
 }
