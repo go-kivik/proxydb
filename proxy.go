@@ -176,7 +176,7 @@ func (d *db) SetSecurity(ctx context.Context, security *driver.Security) error {
 	return d.DB.SetSecurity(ctx, sec)
 }
 
-func (d *db) Changes(ctx context.Context, opts driver.Options) (driver.Changes, error) {
+func (d *db) Changes(context.Context, driver.Options) (driver.Changes, error) {
 	return nil, notYetImplemented
 }
 
@@ -189,11 +189,11 @@ func (d *db) PutAttachment(_ context.Context, _ string, _ *driver.Attachment, _ 
 	panic("PutAttachment should never be called")
 }
 
-func (d *db) GetAttachment(ctx context.Context, docID, filename string, _ driver.Options) (*driver.Attachment, error) {
+func (d *db) GetAttachment(_ context.Context, _, _ string, _ driver.Options) (*driver.Attachment, error) {
 	panic("GetAttachment should never be called")
 }
 
-func (d *db) GetAttachmentMeta(ctx context.Context, docID, rev, filename string, opts driver.Options) (*driver.Attachment, error) {
+func (d *db) GetAttachmentMeta(_ context.Context, _, _, _ string, _ driver.Options) (*driver.Attachment, error) {
 	// FIXME: Unimplemented
 	return nil, notYetImplemented
 }
