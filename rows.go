@@ -1,6 +1,7 @@
 package proxydb
 
 import (
+	"bytes"
 	"encoding/json"
 
 	"github.com/go-kivik/kivik/v4"
@@ -8,26 +9,62 @@ import (
 )
 
 type rows struct {
-	*kivik.Rows
+	*kivik.ResultSet
 }
 
 var _ driver.Rows = &rows{}
 
 func (r *rows) Next(row *driver.Row) error {
-	if !r.Rows.Next() {
-		return r.Rows.Err()
+	if !r.ResultSet.Next() {
+		return r.ResultSet.Err()
 	}
 	var value json.RawMessage
-	if err := r.Rows.ScanValue(&value); err != nil {
+	if err := r.ResultSet.ScanValue(&value); err != nil {
 		return err
 	}
 	var doc json.RawMessage
-	if err := r.Rows.ScanDoc(&doc); err != nil {
+	if err := r.ResultSet.ScanDoc(&doc); err != nil {
 		return err
 	}
-	row.ID = r.Rows.ID()
-	row.Key = json.RawMessage(r.Rows.Key())
-	row.Value = value
-	row.Doc = doc
+	var err error
+	row.ID, err = r.ResultSet.ID()
+	if err != nil {
+		return err
+	}
+	key, err := r.ResultSet.Key()
+	if err != nil {
+		return err
+	}
+	row.Key = json.RawMessage(key)
+	row.Value = bytes.NewReader(value)
+	row.Doc = bytes.NewReader(doc)
 	return nil
+}
+
+func (r *rows) Close() error {
+	return r.ResultSet.Close()
+}
+
+func (r *rows) Offset() int64 {
+	md, err := r.ResultSet.Metadata()
+	if err != nil {
+		return 0
+	}
+	return md.Offset
+}
+
+func (r *rows) TotalRows() int64 {
+	md, err := r.ResultSet.Metadata()
+	if err != nil {
+		return 0
+	}
+	return md.TotalRows
+}
+
+func (r *rows) UpdateSeq() string {
+	md, err := r.ResultSet.Metadata()
+	if err != nil {
+		return ""
+	}
+	return md.UpdateSeq
 }
